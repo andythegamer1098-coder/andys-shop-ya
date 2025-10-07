@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Andys Shop</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{
+      --bg: #070707;
+      --panel: #0f0f0f;
+      --accent-border: rgba(120,120,255,0.15);
+      --popup-z: 1000;
+      --fade-time: 0.3s; /* fast fade-in */
+    }
+
+    /* Basic page */
+    html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:Inter,ui-sans-serif,system-ui,Arial,sans-serif}
+    body{display:flex;flex-direction:column;justify-content:flex-start;align-items:center;padding:28px 16px;}
+
+    /* Header / Title */
+    .title {
+      font-size:34px;
+      font-weight:800;
+      letter-spacing:0.4px;
+      margin:8px 0 22px;
+      background: linear-gradient(90deg, #ff3b3b, #ffb86b, #fffb7d, #9bff80, #78f0ff, #b38bff);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      animation: hue 6s linear infinite;
+    }
+    @keyframes hue { from{filter:hue-rotate(0deg)} to{filter:hue-rotate(360deg)} }
+
+    /* Nav (tabs) */
+    nav {
+      display:flex;
+      gap:14px;
+      flex-wrap:wrap;
+      justify-content:center;
+      margin-bottom:28px;
+    }
+    .tab-btn {
+      background:linear-gradient(180deg,#111,#0b0b0b);
+      border:2px solid rgba(255,255,255,0.04);
+      padding:12px 18px;
+      border-radius:12px;
+      font-weight:700;
+      cursor:pointer;
+      color:#fff;
+      min-width:140px;
+      text-align:center;
+      transition: transform .16s ease, box-shadow .16s ease, border-color .16s;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.5), inset 0 0 12px rgba(255,255,255,0.02);
+    }
+    .tab-btn:hover{ transform:scale(1.08); box-shadow:0 10px 28px rgba(0,0,0,0.6); border-color: cyan; }
+
+    /* Popup background overlay (dark blurred) */
+    .popup-bg{
+      display:none; /* toggled by JS */
+      position:fixed;
+      inset:0;
+      background:rgba(2,2,2,0.62);
+      backdrop-filter: blur(6px) saturate(120%);
+      z-index:var(--popup-z);
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+
+    /* Popup card */
+    .popup {
+      width: min(520px, 92%);
+      max-width: 620px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.06);
+      padding:18px 20px 22px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+      text-align:center;
+      transform-origin:center;
+      animation: popupFade var(--fade-time) ease both;
+      position:relative;
+    }
+
+    @keyframes popupFade {
+      from { opacity:0; transform: translateY(10px) scale(0.99); }
+      to { opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    .popup h2{
+      margin:6px 0 14px;
+      font-size:20px;
+      font-weight:800;
+      background: linear-gradient(90deg,#ff3b3b,#ffb86b,#78f0ff,#b38bff);
+      -webkit-background-clip:text;
+      color:transparent;
+    }
+
+    .popup p{margin:0 0 12px;color:#d7d7d7;font-size:14px}
+
+    .close-btn {
+      position:absolute;
+      right:12px;
+      top:10px;
+      background:none;
+      border:none;
+      color:#ddd;
+      font-size:20px;
+      cursor:pointer;
+      padding:6px;
+      border-radius:8px;
+      transition: color .12s, transform .12s;
+    }
+    .close-btn:hover{ color:#ff8b8b; transform:scale(1.05); }
+
+    /* Developer / rank buttons inside popups */
+    .btn-row { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:10px; }
+    .dev-btn, .rank-btn {
+      min-width:120px;
+      padding:10px 14px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,0.06);
+      background: linear-gradient(90deg,#111,#141414);
+      color:#fff;
+      font-weight:700;
+      cursor:pointer;
+      transition: transform .12s ease, box-shadow .12s;
+    }
+    .dev-btn:hover, .rank-btn:hover { transform:scale(1.07); box-shadow:0 8px 20px rgba(0,0,0,0.6); border-color:cyan; }
+
+    /* special RGB styled buttons (glowy) */
+    .glow {
+      background: linear-gradient(90deg, #8ef, #f8b, #b8ff7d, #ffd27d);
+      background-size: 300% 300%;
+      color:#111;
+      animation: gradientShift 5s linear infinite;
+      border: none;
+      box-shadow: 0 6px 18px rgba(150,150,255,0.08);
+    }
+    @keyframes gradientShift {
+      0% { background-position: 0% 50% }
+      50% { background-position: 100% 50% }
+      100% { background-position: 0% 50% }
+    }
+
+    /* layout helpers */
+    .note { color:#cfcfcf; font-size:13px; margin-top:8px; }
+
+    /* small screens tweak */
+    @media (max-width:420px){
+      .dev-btn, .rank-btn { min-width:100px; font-size:14px; padding:9px 10px; }
+      .popup { padding:14px; }
+      .title { font-size:24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="title">Andys Shop</div>
+
+  <nav>
+    <button class="tab-btn" onclick="openPopup('normalDevPopup')">Normal Game Cmds</button>
+    <button class="tab-btn" onclick="openPopup('swordDevPopup')">Sword Fight Cmds</button>
+  </nav>
+
+  <p class="note">Click a tab, choose a developer, then pick a rank.</p>
+
+  <!-- ========== Normal Game Cmds -> choose dev popup ========== -->
+  <div class="popup-bg" id="normalDevPopup" aria-hidden="true">
+    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="normal-title">
+      <button class="close-btn" onclick="closePopup('normalDevPopup')">×</button>
+      <h2 id="normal-title">From what dev?</h2>
+      <div class="btn-row">
+        <button class="dev-btn glow" onclick="openDevRanks('andyRanks','normalDevPopup')">Andy</button>
+        <button class="dev-btn glow" onclick="openDevRanks('fernRanks','normalDevPopup')">Fern</button>
+        <button class="dev-btn glow" onclick="openDevRanks('v4mpsRanks','normalDevPopup')">V4mps</button>
+      </div>
+      <p class="note">Choose a developer to view their ranks.</p>
+    </div>
+  </div>
+
+  <!-- ========== Andy's Ranks (Normal) with 5 buttons including Server Side ========== -->
+  <div class="popup-bg" id="andyRanks" aria-hidden="true">
+    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="andy-title">
+      <button class="close-btn" onclick="closePopup('andyRanks')">×</button>
+      <h2 id="andy-title">Andy's Ranks</h2>
+      <div class="btn-row">
+        <button class="rank-btn glow" onclick="window.open('https://www.roblox.com/game-pass/1505796944/YES-SING','_blank')">Mod</button>
+        <button class="rank-btn glow" onclick="window.open('https://www.roblox.com/game-pass/1505924937/roblox-on-the-ps5','_blank')">Head Admin</button>
+        <button class="rank-btn glow" onclick="window.open('https://www.roblox.com/game-pass/1504541309/what','_blank')">Owner</button>
+        <button class="rank-btn glow" onclick="window.open('https://www.roblox.com/game-pass/1503194870/impossible-basketball-shot','_blank')">Creator</button>
+        <button class="rank-btn glow" onclick="window.open('https://www.roblox.com/game-pass/1506782796/what-lester-doing','_blank')">Server Side</button>
+      </div>
+      <p class="note">Ranks ordered from Mod → ... → Server Side.</p>
+    </div>
+  </div>
+
+  <!-- ========== Fern's small section (2 placeholders) ========== -->
+  <div class="popup-bg" id="fernRanks" aria-hidden="true">
+    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="fern-title">
+      <button class="close-btn" onclick="closePopup('fernRanks')">×</button>
+      <h2 id="fern-title">Fern's Gamepasses</h2>
+      <div class="btn-row">
+        <button class="rank-btn" onclick="window.open('https://www.roblox.com/game-pass?id=XXXXX','_blank')">Fern Pass 1</button>
+        <button class="rank-btn" onclick="window.open('https://www.roblox.com/game-pass?id=XXXXX','_blank')">Fern Pass 2</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== V4mps (Normal) 4 buttons ========== -->
+  <div class="popup-bg" id="v4mpsRanks" aria-hidden="true">
+    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="v4mps-title">
+      <button class="close-btn" onclick="closePopup('v4mpsRanks')">×</button>
+      <h2 id="v4mps-title">V4mps Gamepasses</h2>
+      <div class="btn-row">
+        <button class="rank-btn glow" onclick="window.open('https://www.roblox.com/game-pass/1513090785/Mod','_blank')">Mod</button>
+        <button class="rank-btn glow" onclick="window.open('https://www.roblox.com/game-pass/1513058970/Admin','_blank')">Admin</button>
+        <button class="rank-btn glow" onclick="window.open('https://www.roblox.com/game-pass/1512999034/Head-admin','_blank')">Head Admin</button>
+        <button class="rank-btn glow" onclick="window.open('https://www.roblox.com/game-pass/1513084897/Owner','_blank')">Owner</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== Sword Fight -> choose dev popup ========== -->
+  <div class="popup-bg" id="swordDevPopup" aria-hidden="true">
+    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="sword-title">
+      <button class="close-btn" onclick="closePopup('swordDevPopup')">×</button>
+      <h2 id="sword-title">From what dev?</h2>
+      <div class="btn-row">
+        <button class="dev-btn glow" onclick="openDevRanks('namelessRanks','swordDevPopup')">Nameless</button>
+        <button class="dev-btn glow" onclick="openDevRanks('v4mpsSwordRanks','swordDevPopup')">V4mps</button>
+      </div>
+      <p class="note">Nameless includes Mod → Creator ranks.</p>
+    </div>
+  </div>
+
+  <!-- ========== Nameless (Sword) 4 buttons ========== -->
+  <div class="popup-bg" id="namelessRanks" aria-hidden="true">
+    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="nameless-title">
+      <button class="close-btn" onclick="closePopup('namelessRanks')">×</button>
+      <h2 id="nameless-title">Nameless Gamepasses</h2>
+      <div class="btn-row">
+        <button class="rank-btn glow" onclick="window.open('https://www.roblox.com/game-pass/221417923/w','_blank')">Mod</button>
+        <button class="rank-btn glow" onclick="window.open('https://www.roblox.com/game-pass/221418799/w','_blank')">Admin</button>
+        <button class="rank-btn glow" onclick="window.open('https://www.roblox.com/game-pass/216789989/wdaswdaw','_blank')">Head Admin</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== V4mps (Sword) small 2 placeholders ========== -->
+  <div class="popup-bg" id="v4mpsSwordRanks" aria-hidden="true">
+    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="v4mps-sword-title">
+      <button class="close-btn" onclick="closePopup('v4mpsSwordRanks')">×</button>
+      <h2 id="v4mps-sword-title">V4mps (Sword) Gamepasses</h2>
+      <div class="btn-row">
+        <button class="rank-btn" onclick="window.open('https://www.roblox.com/game-pass?id=XXXXX','_blank')">V4mps Sword 1</button>
+        <button class="rank-btn" onclick="window.open('https://www.roblox.com/game-pass?id=XXXXX','_blank')">V4mps Sword 2</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* Open a top-level popup by id */
+    function openPopup(id){
+      // hide any existing popups first (prevents stacking)
+      document.querySelectorAll('.popup-bg').forEach(p => p.style.display = 'none');
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.style.display = 'flex';
+      // small accessibility attribute
+      el.setAttribute('aria-hidden','false');
+    }
+
+    /* Close popup by id */
+    function closePopup(id){
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.style.display = 'none';
+      el.setAttribute('aria-hidden','true');
+    }
+
+    /* When opening a dev-specific ranks popup, close the parent dev selection popup to keep things tidy.
+       parentId is optional (e.g., 'normalDevPopup' or 'swordDevPopup') */
+    function openDevRanks(devPopupId, parentId){
+      // close all top-level popups first
+      document.querySelectorAll('.popup-bg').forEach(p => p.style.display = 'none');
+      const target = document.getElementById(devPopupId);
+      if(target){
+        target.style.display = 'flex';
+        target.setAttribute('aria-hidden','false');
+      }
+    }
+
+    /* allow clicking outside popup content to close it */
+    window.addEventListener('click', (e) => {
+      // if clicked exactly on a .popup-bg (the overlay), close that overlay
+      if(e.target && e.target.classList && e.target.classList.contains('popup-bg')){
+        e.target.style.display = 'none';
+        e.target.setAttribute('aria-hidden','true');
+      }
+    });
+
+    /* keyboard: close modals on Esc */
+    window.addEventListener('keydown', (e) => {
+      if(e.key === 'Escape'){
+        document.querySelectorAll('.popup-bg').forEach(p => p.style.display = 'none');
+      }
+    });
+  </script>
+</body>
+</html>
